@@ -47,6 +47,26 @@ public:
         return true;
     }
 
+    int GetCount() const {
+        int count = 0;
+        priNode<T>* curr = head;
+        while (curr) {
+            count++;
+            curr = curr->getNext();
+        }
+        return count;
+    }
+    
+    void print() const {
+        priNode<T>* curr = head;
+        while (curr) {
+            std::cout << *(curr->getItem()) << ", ";
+            curr = curr->getNext();
+        }
+        std::cout << std::endl;
+    }
+    
+
     bool peek(T& topEntry, int& pri) {
         if (isEmpty())
             return false;

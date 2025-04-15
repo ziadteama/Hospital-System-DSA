@@ -10,52 +10,72 @@
 
 #include "StackADT.h"
 
-//Unless spesificed by the stack user, the default size is 100
-template<typename T>
+// Unless spesificed by the stack user, the default size is 100
+template <typename T>
 class ArrayStack : public StackADT<T>
 {
-	enum { MAX_SIZE = 100 };
-private:
-	T items[MAX_SIZE];		// Array of stack items
-	int top;                   // Index to top of stack
-	
-public:
+	enum
+	{
+		MAX_SIZE = 100
+	};
 
+private:
+	T items[MAX_SIZE]; // Array of stack items
+	int top;		   // Index to top of stack
+
+public:
 	ArrayStack()
 	{
 		top = -1;
-	}  // end default constructor
+	} // end default constructor
 
 	bool isEmpty() const
 	{
-		return top == -1;	
-	}  // end isEmpty
+		return top == -1;
+	} // end isEmpty
 
-	bool push(const T& newEntry)
+	int GetCount() const
 	{
-		if( top == MAX_SIZE-1 ) return false;	//Stack is FULL
+		return top + 1;
+	}
+
+	void print() const
+	{
+		for (int i = top; i >= 0; i--)
+		{
+			cout << *(items[i]) << ", ";
+		}
+		cout << std::endl;
+	}
+
+	bool push(const T &newEntry)
+	{
+		if (top == MAX_SIZE - 1)
+			return false; // Stack is FULL
 
 		top++;
-		items[top] = newEntry;   
+		items[top] = newEntry;
 		return true;
-	}  // end push
+	} // end push
 
-	bool pop(T& TopEntry)
+	bool pop(T &TopEntry)
 	{
-		if (isEmpty()) return false;
-		
-		TopEntry = items[top];		 
+		if (isEmpty())
+			return false;
+
+		TopEntry = items[top];
 		top--;
 		return true;
-	}  // end pop
-	
-	bool peek(T& TopEntry) const
+	} // end pop
+
+	bool peek(T &TopEntry) const
 	{
-		if (isEmpty()) return false;
-		
-		TopEntry = items[top];		 
+		if (isEmpty())
+			return false;
+
+		TopEntry = items[top];
 		return true;
-	}  // end peek
+	} // end peek
 
 }; // end ArrayStack
 

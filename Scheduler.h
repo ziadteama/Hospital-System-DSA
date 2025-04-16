@@ -1,9 +1,8 @@
-// Scheduler.h
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
 #include "LinkedQueue.h"
-#include "PriQueue.h"
+#include "priQueue.h"
 #include "ArrayStack.h"
 #include "Patient.h"
 #include "Resource.h"
@@ -11,58 +10,66 @@
 #include "X_WaitList.h"
 #include "EarlyPList.h"
 #include <string>
+#include "LatePList.h"
 
-class Scheduler {
+class Scheduler
+{
 private:
     // Master clock
     int currentTime;
-
+    
     // Configuration from input
     int totalPatients;
     int cancelProbability;
     int rescheduleProbability;
-
+    
     // Patient lists
-    LinkedQueue<Patient*> allPatients;
+    LinkedQueue<Patient *> allPatients;
     EarlyPList earlyPatients;
-    PriQueue<Patient*> latePatients;
+    LatePList latePatients;
+    // priQueue<Patient*> latePatients;
 
     EU_WaitList eWaiting;
     EU_WaitList uWaiting;
     X_WaitList xWaiting;
 
-    PriQueue<Patient*> inTreatment;
-    ArrayStack<Patient*> finishedPatients;
+    priQueue<Patient *> inTreatment;
+    ArrayStack<Patient *> finishedPatients;
 
     // Resources
-    LinkedQueue<Resource*> eDevices;
-    LinkedQueue<Resource*> uDevices;
-    LinkedQueue<Resource*> xRooms;
+    LinkedQueue<Resource *> eDevices;
+    LinkedQueue<Resource *> uDevices;
+    LinkedQueue<Resource *> xRooms;
 
 public:
     Scheduler();
 
-    void loadPatients(const std::string& inputFileName);
+    // Phase 2 Core Functions
+    void loadPatients(const std::string &inputFileName);
     void simulate();
-    void generateOutputFile(const std::string& outputFileName);
-
-    // Helpers used by Treatment subclasses
-    void addToEWaiting(Patient* p);
-    void addToUWaiting(Patient* p);
-    void addToXWaiting(Patient* p);
-
-    // Resource access helpers
-    Resource* getNextEDevice();
-    Resource* getNextUDevice();
-    Resource* getNextXRoom();
-    void returnEDevice(Resource* r);
-    void returnUDevice(Resource* r);
-    void returnXRoom(Resource* r);
-
-    // Status checks
     bool simulationFinished() const;
+    void generateOutputFile(const std::string &outputFileName);
 
-    // UI access
+    // Treatment and Patient Flow
+    void assignResources();   // Assign patients to available resources
+    void updateInTreatment(); // Update patients currently receiving treatment
+
+    // Waitlist Helpers (called by Treatment subclasses)
+    void addToEWaiting(Patient *p);
+    void addToUWaiting(Patient *p);
+    void addToXWaiting(Patient *p);
+
+    // Resource Queue Access
+    Resource *getNextEDevice();
+    Resource *getNextUDevice();
+    Resource *getNextXRoom();
+    void returnEDevice(Resource *r);
+    void returnUDevice(Resource *r);
+    void returnXRoom(Resource *r);
+
+    void printStatus();
+
+    // UI Access
     friend class UI;
 };
 

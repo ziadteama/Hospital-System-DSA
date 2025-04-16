@@ -1,3 +1,4 @@
+#include <iostream>  // add at the top of priQueue.h
 #pragma once
 #include "priNode.h"
 
@@ -60,11 +61,14 @@ public:
     void print() const {
         priNode<T>* curr = head;
         while (curr) {
-            std::cout << *(curr->getItem()) << ", ";
+            int pri;
+            T item = curr->getItem(pri);  // ✅ Fixes the error
+            if (item) std::cout << *item << " ";
             curr = curr->getNext();
         }
         std::cout << std::endl;
     }
+    
     
 
     bool peek(T& topEntry, int& pri) {

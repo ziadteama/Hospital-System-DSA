@@ -1,10 +1,10 @@
-#ifndef EARLYPLIST_H
-#define EARLYPLIST_H
+#ifndef LATEPLIST_H
+#define LATEPLIST_H
 
 #include "priQueue.h"
 #include "Patient.h"
 
-class EarlyPList : public priQueue<Patient*> {
+class LatePList : public priQueue<Patient*> {
 public:
     using priQueue<Patient*>::enqueue;
     using priQueue<Patient*>::dequeue;
@@ -13,9 +13,6 @@ public:
     using priQueue<Patient*>::GetCount;
     using priQueue<Patient*>::print;
 
-    void reschedule(Patient* patient, int newAppointmentTime);
-
-    // ✅ Add this:
     void incrementWaits();
 };
 

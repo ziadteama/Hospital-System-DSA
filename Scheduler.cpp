@@ -129,7 +129,8 @@ void Scheduler::simulate()
         while (!allPatients.isEmpty())
         {
             Patient *p = nullptr;
-            if (!allPatients.peek(p) || !p || p->getArrivalTime() > currentTime) break;
+            if (!allPatients.peek(p) || !p || p->getArrivalTime() > currentTime)
+                break;
 
             allPatients.dequeue(p);
             std::cout << "Dequeued Patient P" << p->getID()
@@ -268,6 +269,13 @@ void Scheduler::simulate()
         latePatients.incrementWaits();
 
         // STEP 8: Advance time
+        if (simulationMode == 1)
+        {
+            printStatus(); // Show detailed status of the system
+            std::cout << "\nPress Enter to continue...\n";
+            std::cin.get(); // Waits for user input
+        }
+
         currentTime++;
 
         if (currentTime > 200)

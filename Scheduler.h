@@ -17,12 +17,13 @@ class Scheduler
 private:
     // Master clock
     int currentTime;
-    
+
     // Configuration from input
     int totalPatients;
     int cancelProbability;
     int rescheduleProbability;
-    
+    int simulationMode; // 0 = Silent, 1 = Interactive
+
     // Patient lists
     LinkedQueue<Patient *> allPatients;
     EarlyPList earlyPatients;
@@ -63,6 +64,10 @@ public:
     Resource *getNextEDevice();
     Resource *getNextUDevice();
     Resource *getNextXRoom();
+
+    void setMode(int mode) { simulationMode = mode; }
+    int getMode() const { return simulationMode; }
+
     void returnEDevice(Resource *r);
     void returnUDevice(Resource *r);
     void returnXRoom(Resource *r);

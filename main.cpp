@@ -2,30 +2,39 @@
 #include "UI.h"
 #include <iostream>
 
-int main() {
+int main()
+{
     Scheduler system;
     UI ui;
 
     int mode = UI::getOperationMode();
     std::string inputFile = UI::getInputFileName();
     std::string outputFile = UI::getOutputFileName();
+    system.setMode(mode); // Store mode inside Scheduler
 
     std::cout << "Reading patients from file: " << inputFile << "\n";
     system.loadPatients(inputFile);
     std::cout << "Finished loading patients.\n";
 
-    if (!system.simulationFinished()) {
+    if (!system.simulationFinished())
+    {
         std::cout << "Starting simulation...\n";
-        if (mode == 1) {
-            while (!system.simulationFinished()) {
+        if (mode == 1)
+        {
+            while (!system.simulationFinished())
+            {
                 system.simulate(); // 1 timestep or full?
                 system.printStatus();
                 std::cin.get();
             }
-        } else {
+        }
+        else
+        {
             system.simulate();
         }
-    } else {
+    }
+    else
+    {
         std::cout << "Simulation skipped. Nothing to simulate.\n";
     }
 

@@ -6,22 +6,26 @@ void EU_WaitList::insertSorted(Patient* patient) {
 
     LinkedQueue<Patient*> temp;
     Patient* current = nullptr;
+    bool inserted = false;
 
     while (!this->isEmpty()) {
         this->dequeue(current);
-        if (current->getAppointmentTime() > patient->getAppointmentTime()) {
+        if (!current) continue;  // safeguard
+
+        if (!inserted && current->getAppointmentTime() > patient->getAppointmentTime()) {
             temp.enqueue(patient);
-            patient = nullptr;
+            inserted = true;
         }
         temp.enqueue(current);
     }
 
-    if (patient)
+    if (!inserted)
         temp.enqueue(patient);
 
     while (!temp.isEmpty()) {
         temp.dequeue(current);
-        this->enqueue(current);
+        if (current)  // safeguard
+            this->enqueue(current);
     }
 }
 

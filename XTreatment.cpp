@@ -11,5 +11,10 @@ bool XTreatment::canAssign(Scheduler& scheduler) {
 }
 
 void XTreatment::moveFromAllToWait(Scheduler& scheduler, Patient* patient) {
+    if (!patient) {
+        std::cout << "[ERROR] XTreatment tried to move a null patient to waitlist!\n";
+        return;
+    }
     scheduler.addToXWaiting(patient);
 }
+

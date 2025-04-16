@@ -110,21 +110,11 @@ bool Scheduler::simulationFinished() const
 
 void Scheduler::simulate()
 {
-    std::cout << "\n=== SIMULATION STARTED ===\n";
+    if (simulationMode == 1)
+        std::cout << "\n=== SIMULATION STARTED ===\n";
 
     while (!simulationFinished())
     {
-        std::cout << "\n--- Timestep: " << currentTime << " ---\n";
-        std::cout << "AllPatients: " << allPatients.GetCount()
-                  << ", Early: " << earlyPatients.GetCount()
-                  << ", Late: " << latePatients.GetCount()
-                  << ", E-Wait: " << eWaiting.GetCount()
-                  << ", U-Wait: " << uWaiting.GetCount()
-                  << ", X-Wait: " << xWaiting.GetCount()
-                  << ", In-Treatment: " << inTreatment.GetCount()
-                  << ", Finished: " << finishedPatients.GetCount()
-                  << std::endl;
-
         // STEP 1: Move newly arrived patients
         while (!allPatients.isEmpty())
         {
@@ -133,34 +123,26 @@ void Scheduler::simulate()
                 break;
 
             allPatients.dequeue(p);
-            std::cout << "Dequeued Patient P" << p->getID()
-                      << " (VT=" << p->getArrivalTime()
-                      << ", PT=" << p->getAppointmentTime() << ")\n";
 
             if (p->getArrivalTime() < p->getAppointmentTime())
             {
                 earlyPatients.enqueue(p, p->getAppointmentTime());
-                std::cout << " → Added to Early list\n";
             }
             else if (p->getArrivalTime() > p->getAppointmentTime())
             {
                 int penalty = (p->getArrivalTime() - p->getAppointmentTime()) / 2;
                 int adjustedPT = p->getAppointmentTime() + penalty;
                 latePatients.enqueue(p, adjustedPT);
-                std::cout << " → Added to Late list (Adjusted PT = " << adjustedPT << ")\n";
             }
             else
             {
                 Treatment *t = p->getNextTreatment();
                 if (t)
-                {
-                    std::cout << " → Moving to waitlist directly\n";
                     t->moveFromAllToWait(*this, p);
-                }
             }
         }
 
-        // STEP 2: Move ready late patients
+        // STEP 2: Move late patients ready after penalty
         int lateCount = latePatients.GetCount();
         for (int i = 0; i < lateCount; ++i)
         {
@@ -172,10 +154,7 @@ void Scheduler::simulate()
                 {
                     Treatment *t = p->getNextTreatment();
                     if (t)
-                    {
-                        std::cout << "Late patient P" << p->getID() << " now ready → moving to waitlist\n";
                         t->moveFromAllToWait(*this, p);
-                    }
                 }
                 else
                 {
@@ -184,7 +163,7 @@ void Scheduler::simulate()
             }
         }
 
-        // STEP 2.5: Move ready early patients
+        // STEP 2.5: Move early patients ready
         int earlyCount = earlyPatients.GetCount();
         for (int i = 0; i < earlyCount; ++i)
         {
@@ -196,10 +175,7 @@ void Scheduler::simulate()
                 {
                     Treatment *t = p->getNextTreatment();
                     if (t)
-                    {
-                        std::cout << "Early patient P" << p->getID() << " now ready → moving to waitlist\n";
                         t->moveFromAllToWait(*this, p);
-                    }
                 }
                 else
                 {
@@ -208,82 +184,83 @@ void Scheduler::simulate()
             }
         }
 
-        // STEP 3: Cancel from X_WaitList BEFORE assignments
+        // STEP 3: Cancel from X_WaitList
         if (rand() % 100 < cancelProbability)
         {
             Patient *toCancel = xWaiting.attemptCancellation(cancelProbability);
             if (toCancel)
             {
-                std::cout << "[Cancelled] Patient P" << toCancel->getID()
-                          << " removed from X-WaitList at timestep " << currentTime << "\n";
                 toCancel->markCancelled();
                 toCancel->setFinishTime(currentTime);
-                toCancel->clearRemainingTreatments(); // avoid being reprocessed
+                toCancel->clearRemainingTreatments();
                 finishedPatients.push(toCancel);
+
+                if (simulationMode == 1)
+                {
+                    std::cout << "Patient P" << toCancel->getID()
+                              << " cancelled from X-Waiting\n";
+                }
             }
         }
 
-        // STEP 4: Assign resources to ready patients
+        // STEP 4: Assign resources
         assignResources();
 
-        // STEP 5: Move finished patients from treatment to finish or next treatment
+        // STEP 5: Update inTreatment
         updateInTreatment();
 
-        // STEP 6: Possibly reschedule early patient
+        // STEP 6: Reschedule
         if (rand() % 100 < rescheduleProbability && !earlyPatients.isEmpty())
         {
             Patient *resP = nullptr;
             int oldPri;
             if (earlyPatients.dequeue(resP, oldPri))
             {
-                if (resP->wasRescheduled())
-                {
-                    earlyPatients.enqueue(resP, oldPri); // No double reschedule
-                }
-                else if (currentTime < oldPri)
+                if (!resP->wasRescheduled() && currentTime < oldPri)
                 {
                     int newPT = oldPri + 5 + rand() % 10;
                     resP->markRescheduled();
                     earlyPatients.enqueue(resP, newPT);
-                    std::cout << "Patient P" << resP->getID()
-                              << " rescheduled to PT=" << newPT << "\n";
+
+                    if (simulationMode == 1)
+                    {
+                        std::cout << "Patient P" << resP->getID()
+                                  << " rescheduled to PT=" << newPT << "\n";
+                    }
                 }
                 else
                 {
-                    Treatment *t = resP->getNextTreatment();
-                    if (t)
-                    {
-                        std::cout << "Patient P" << resP->getID()
-                                  << " reached PT → moved to waitlist\n";
-                        t->moveFromAllToWait(*this, resP);
-                    }
+                    earlyPatients.enqueue(resP, oldPri);
                 }
             }
         }
 
-        // STEP 7: Update all waiting patients' WT
+        // STEP 7: Increment wait times
         eWaiting.incrementWaits();
         uWaiting.incrementWaits();
         xWaiting.incrementWaits();
         earlyPatients.incrementWaits();
         latePatients.incrementWaits();
 
-        // STEP 8: Advance time
+        // STEP 8: Print and advance
         if (simulationMode == 1)
         {
-            printStatus(); // Show detailed status of the system
+            printStatus();
             std::cout << "\nPress Enter to continue...\n";
-            std::cin.get(); // Waits for user input
+            std::cin.get();
         }
 
         currentTime++;
 
         if (currentTime > 200)
         {
-            std::cout << "⚠️ Timestep limit reached (200). Breaking to avoid infinite loop.\n";
+            std::cout << "⚠️ Timestep limit reached (200). Breaking.\n";
             break;
         }
     }
+
+    if (simulationMode == 0)
+        std::cout << "Silent Mode: Simulation completed. Output file generated.\n";
 }
 
 void Scheduler::assignResources()
@@ -568,16 +545,31 @@ Resource *Scheduler::getNextXRoom()
 
 void Scheduler::addToEWaiting(Patient *p)
 {
+    if (!p)
+    {
+        std::cout << "[FATAL] Tried to add null patient to XWaiting at timestep " << currentTime << "\n";
+        return;
+    }
     eWaiting.insertSorted(p);
 }
 
 void Scheduler::addToUWaiting(Patient *p)
 {
+    if (!p)
+    {
+        std::cout << "[FATAL] Tried to add null patient to XWaiting at timestep " << currentTime << "\n";
+        return;
+    }
     uWaiting.insertSorted(p);
 }
 
 void Scheduler::addToXWaiting(Patient *p)
 {
+    if (!p)
+    {
+        std::cout << "[FATAL] Tried to add null patient to XWaiting at timestep " << currentTime << "\n";
+        return;
+    }
     xWaiting.insertSorted(p);
 }
 

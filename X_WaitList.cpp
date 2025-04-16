@@ -22,15 +22,20 @@ Patient* X_WaitList::attemptCancellation(int /*probability*/) {
     for (int i = 0; i < count; ++i) {
         Patient* p = nullptr;
         this->dequeue(p);
-        if (i == idx) target = p;
-        else temp.enqueue(p);
+
+        if (!p) continue; // ❗ Defensive: skip broken pointers
+
+        if (i == idx)
+            target = p;
+        else
+            temp.enqueue(p);
     }
 
     while (!temp.isEmpty()) {
         Patient* p = nullptr;
         temp.dequeue(p);
-        this->enqueue(p);
+        if (p) this->enqueue(p);  // ❗ Only enqueue if valid
     }
 
-    return target;
+    return target; // ❗ May still be null if something went wrong
 }

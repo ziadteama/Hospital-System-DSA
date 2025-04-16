@@ -34,11 +34,28 @@ void Patient::addTreatment(Treatment* treatment) {
     }
 }
 
+void Patient::advanceTreatment() {
+    Treatment* temp = nullptr;
+    requiredTreatments.dequeue(temp);
+    // optional: delete temp if ownership is here
+}
+
+
 Treatment* Patient::getNextTreatment() {
     Treatment* next = nullptr;
-    requiredTreatments.dequeue(next);
+    requiredTreatments.peek(next);
     return next;
 }
+
+void Patient::clearRemainingTreatments() {
+    Treatment* t = nullptr;
+    while (!requiredTreatments.isEmpty()) {
+        requiredTreatments.dequeue(t);
+        delete t;
+    }
+}
+
+
 
 bool Patient::hasMoreTreatments() const {
     return !requiredTreatments.isEmpty();

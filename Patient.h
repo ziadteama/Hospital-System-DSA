@@ -38,7 +38,9 @@ public:
     void incrementWaitingTime();
     void setFinishTime(int time);
     void addTreatment(Treatment* treatment);
-    Treatment* getNextTreatment();
+    void advanceTreatment();
+    Treatment *getNextTreatment();
+    void clearRemainingTreatments();
     bool hasMoreTreatments() const;
 
     void markCancelled();

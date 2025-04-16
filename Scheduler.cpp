@@ -125,18 +125,13 @@ void Scheduler::simulate()
                   << ", Finished: " << finishedPatients.GetCount()
                   << std::endl;
 
-        // STEP 1: Move newly arrived patients (VT <= currentTime)
+        // STEP 1: Move newly arrived patients
         while (!allPatients.isEmpty())
         {
             Patient *p = nullptr;
-            if (!allPatients.peek(p) || !p)
-                break;
-
-            if (p->getArrivalTime() > currentTime)
-                break;
+            if (!allPatients.peek(p) || !p || p->getArrivalTime() > currentTime) break;
 
             allPatients.dequeue(p);
-
             std::cout << "Dequeued Patient P" << p->getID()
                       << " (VT=" << p->getArrivalTime()
                       << ", PT=" << p->getAppointmentTime() << ")\n";
@@ -164,10 +159,9 @@ void Scheduler::simulate()
             }
         }
 
-        // STEP 2: Move late patients ready after penalty (safe dequeue+check)
-        bool movedLate = false;
+        // STEP 2: Move ready late patients
         int lateCount = latePatients.GetCount();
-        for (int i = 0; i < lateCount && !movedLate; ++i)
+        for (int i = 0; i < lateCount; ++i)
         {
             Patient *p = nullptr;
             int pri;
@@ -181,19 +175,17 @@ void Scheduler::simulate()
                         std::cout << "Late patient P" << p->getID() << " now ready → moving to waitlist\n";
                         t->moveFromAllToWait(*this, p);
                     }
-                    movedLate = true;
                 }
                 else
                 {
-                    latePatients.enqueue(p, pri); // Reinsert if not ready
+                    latePatients.enqueue(p, pri);
                 }
             }
         }
 
-        // STEP 2.5: Move early patients ready (same pattern)
-        bool movedEarly = false;
+        // STEP 2.5: Move ready early patients
         int earlyCount = earlyPatients.GetCount();
-        for (int i = 0; i < earlyCount && !movedEarly; ++i)
+        for (int i = 0; i < earlyCount; ++i)
         {
             Patient *p = nullptr;
             int pri;
@@ -207,66 +199,77 @@ void Scheduler::simulate()
                         std::cout << "Early patient P" << p->getID() << " now ready → moving to waitlist\n";
                         t->moveFromAllToWait(*this, p);
                     }
-                    movedEarly = true;
                 }
                 else
                 {
-                    earlyPatients.enqueue(p, pri); // Reinsert if not ready
+                    earlyPatients.enqueue(p, pri);
                 }
             }
         }
 
-        // STEP 3: Assign resources
-        assignResources();
-
-        // STEP 4: Update patients in treatment
-        updateInTreatment();
-
-        // STEP 5: Cancel patient from X_WaitList if needed
+        // STEP 3: Cancel from X_WaitList BEFORE assignments
         if (rand() % 100 < cancelProbability)
         {
             Patient *toCancel = xWaiting.attemptCancellation(cancelProbability);
             if (toCancel)
             {
-                std::cout << "Patient P" << toCancel->getID() << " cancelled from X-Waiting\n";
+                std::cout << "[Cancelled] Patient P" << toCancel->getID()
+                          << " removed from X-WaitList at timestep " << currentTime << "\n";
                 toCancel->markCancelled();
+                toCancel->setFinishTime(currentTime);
+                toCancel->clearRemainingTreatments(); // avoid being reprocessed
                 finishedPatients.push(toCancel);
             }
         }
 
-        // STEP 6: Reschedule early patient
+        // STEP 4: Assign resources to ready patients
+        assignResources();
+
+        // STEP 5: Move finished patients from treatment to finish or next treatment
+        updateInTreatment();
+
+        // STEP 6: Possibly reschedule early patient
         if (rand() % 100 < rescheduleProbability && !earlyPatients.isEmpty())
         {
             Patient *resP = nullptr;
             int oldPri;
-            if (currentTime < oldPri) {
-                // Safe to reschedule
-                int newPT = oldPri + 5 + rand() % 10;
-                resP->markRescheduled();
-                earlyPatients.enqueue(resP, newPT);
-                std::cout << "Patient P" << resP->getID() << " rescheduled to PT=" << newPT << "\n";
-            } else {
-                // Time has come → move to waitlist instead
-                Treatment* t = resP->getNextTreatment();
-                if (t) {
-                    std::cout << "Patient P" << resP->getID() << " is due now → moving to waitlist\n";
-                    t->moveFromAllToWait(*this, resP);
+            if (earlyPatients.dequeue(resP, oldPri))
+            {
+                if (resP->wasRescheduled())
+                {
+                    earlyPatients.enqueue(resP, oldPri); // No double reschedule
+                }
+                else if (currentTime < oldPri)
+                {
+                    int newPT = oldPri + 5 + rand() % 10;
+                    resP->markRescheduled();
+                    earlyPatients.enqueue(resP, newPT);
+                    std::cout << "Patient P" << resP->getID()
+                              << " rescheduled to PT=" << newPT << "\n";
+                }
+                else
+                {
+                    Treatment *t = resP->getNextTreatment();
+                    if (t)
+                    {
+                        std::cout << "Patient P" << resP->getID()
+                                  << " reached PT → moved to waitlist\n";
+                        t->moveFromAllToWait(*this, resP);
+                    }
                 }
             }
-            
         }
 
-        // STEP 7: Increment wait times
+        // STEP 7: Update all waiting patients' WT
         eWaiting.incrementWaits();
         uWaiting.incrementWaits();
         xWaiting.incrementWaits();
         earlyPatients.incrementWaits();
         latePatients.incrementWaits();
 
-        // STEP 8: UI Print (optional)
-        // printStatus();
-
+        // STEP 8: Advance time
         currentTime++;
+
         if (currentTime > 200)
         {
             std::cout << "⚠️ Timestep limit reached (200). Breaking to avoid infinite loop.\n";
@@ -362,15 +365,15 @@ void Scheduler::updateInTreatment()
 
         if (finishTime > currentTime)
         {
-            inTreatment.enqueue(p, finishTime); // Not ready → return to queue
+            inTreatment.enqueue(p, finishTime); // Not ready yet → requeue
             continue;
         }
 
         // ✅ Patient is ready to be processed
-        Treatment *last = p->getNextTreatment();
-        if (last)
+        Treatment *current = p->getNextTreatment(); // should be peek
+        if (current)
         {
-            Resource *r = last->getAssignedResource();
+            Resource *r = current->getAssignedResource();
             if (r)
             {
                 r->release();
@@ -390,9 +393,12 @@ void Scheduler::updateInTreatment()
             }
         }
 
+        // ✅ Mark current treatment as finished (advance)
+        p->advanceTreatment(); // <-- remove the current treatment
+
         if (p->hasMoreTreatments())
         {
-            Treatment *next = p->getNextTreatment();
+            Treatment *next = p->getNextTreatment(); // next treatment (peek again)
             if (next)
                 next->moveFromAllToWait(*this, p);
         }
@@ -402,7 +408,7 @@ void Scheduler::updateInTreatment()
             finishedPatients.push(p);
         }
 
-        handled = true; // ✅ Stop after handling 1 patient
+        handled = true; // Only one patient per timestep
     }
 }
 

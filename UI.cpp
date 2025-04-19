@@ -2,6 +2,7 @@
 
 #include "UI.h"
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 int UI::getOperationMode()
@@ -42,6 +43,7 @@ void UI::printSystemStatus(
     const priQueue<Patient *> &latePatients,
     const priQueue<Patient *> &earlyPatients)
 {
+    using namespace std;
     cout << "\nCurrent Timestep: " << currentTime << "\n";
 
     cout << "===============   ALL List   ===============\n";
@@ -82,15 +84,20 @@ void UI::printSystemStatus(
     cout << "-------------------------------------------------------\n";
     cout << finishedPatients.GetCount() << " Finished patients: ";
 
-    // DESCENDING print of finishedPatients stack:
-    // DESCENDING FT: print directly without reversing (stack top has most recent FT)
+    cout << finishedPatients.GetCount() << " Finished patients: ";
+
     ArrayStack<Patient *> copy = finishedPatients;
     Patient *p = nullptr;
     while (!copy.isEmpty())
     {
         copy.pop(p);
         if (p)
-            cout << "P" << p->getID() << "_" << (p->getType() == PatientType::Normal ? "Normal" : "Recovering") << ", ";
+        {
+            cout << "P" << std::setw(2) << std::setfill('0') << p->getID()
+                 << "_" << (p->getType() == PatientType::Normal ? "N" : "R") << ", ";
+        }
     }
+    cout << endl;
+
     cout << endl;
 }

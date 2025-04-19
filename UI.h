@@ -31,6 +31,7 @@ public:
         const priQueue<Patient*>& earlyPatients
     );
 
+
     // Optional helpers
     static void printPatientList(const LinkedQueue<Patient*>& list, const std::string& title, int limit = 10);
     static void printDeviceList(const LinkedQueue<Resource*>& list, const std::string& label);

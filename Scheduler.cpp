@@ -137,7 +137,7 @@ void Scheduler::simulate()
             {
                 int penalty = (p->getArrivalTime() - p->getAppointmentTime()) / 2;
                 int adjustedPT = p->getAppointmentTime() + penalty;
-                latePatients.enqueue(p, adjustedPT);
+                latePatients.enqueue(p, currentTime + 2);  // <== key change here
             }
             else
             {
@@ -147,7 +147,7 @@ void Scheduler::simulate()
             }
         }
 
-        // STEP 2: Move late patients ready after penalty
+        // STEP 2: Move late patients after delay
         int lateCount = latePatients.GetCount();
         for (int i = 0; i < lateCount; ++i)
         {
@@ -411,8 +411,6 @@ void Scheduler::generateOutputFile(const std::string &outputFileName)
         return;
     }
 
-    // Temporary stack to reverse print order
-    ArrayStack<Patient *> reverseStack;
     Patient *p = nullptr;
 
     int totalWT = 0, totalTT = 0;
@@ -422,18 +420,11 @@ void Scheduler::generateOutputFile(const std::string &outputFileName)
     int earlyCount = 0, lateCount = 0;
     int totalLatePenalty = 0;
 
-    // Reverse stack to print from latest FT down to earliest
+    outFile << "PID  PType  PT  VT  FT  WT  TT  Cancel  Resc\n";
+
     while (!finishedPatients.isEmpty())
     {
         finishedPatients.pop(p);
-        reverseStack.push(p);
-    }
-
-    outFile << "PID  PType  PT  VT  FT  WT  TT  Cancel  Resc\n";
-
-    while (!reverseStack.isEmpty())
-    {
-        reverseStack.pop(p);
         if (!p)
             continue;
 
@@ -471,12 +462,9 @@ void Scheduler::generateOutputFile(const std::string &outputFileName)
             rCount++;
         }
 
-        if (cancel)
-            cancelledCount++;
-        if (resch)
-            rescheduledCount++;
-        if (early)
-            earlyCount++;
+        if (cancel) cancelledCount++;
+        if (resch) rescheduledCount++;
+        if (early) earlyCount++;
         if (late)
         {
             lateCount++;

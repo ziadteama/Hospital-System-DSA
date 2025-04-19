@@ -44,12 +44,10 @@ void UI::printSystemStatus(
 {
     cout << "\nCurrent Timestep: " << currentTime << "\n";
 
-    // ALL Patients
     cout << "===============   ALL List   ===============\n";
     cout << allPatients.GetCount() << " patients total: ";
     allPatients.print();
 
-    // Waiting Lists
     cout << "============== Waiting Lists ==============\n";
     cout << eWaiting.GetCount() << " Electrotherapy patients: ";
     eWaiting.print();
@@ -58,7 +56,6 @@ void UI::printSystemStatus(
     cout << xWaiting.GetCount() << " GymExercises patients: ";
     xWaiting.print();
 
-    // Early & Late Lists
     cout << "===============   Early List   ================\n";
     cout << earlyPatients.GetCount() << " patients: ";
     earlyPatients.print();
@@ -67,7 +64,6 @@ void UI::printSystemStatus(
     cout << latePatients.GetCount() << " patients: ";
     latePatients.print();
 
-    // Available Devices
     cout << "===============   Avail E-devices ===============\n";
     cout << eDevices.GetCount() << " Electro devices: ";
     eDevices.print();
@@ -79,13 +75,22 @@ void UI::printSystemStatus(
     cout << "===============   Avail X-rooms ===============\n";
     xRooms.print();
 
-    // In Treatment
     cout << "============  In-treatment List ================\n";
     cout << inTreatment.GetCount() << " patients: ";
     inTreatment.print();
 
-    // Finished
     cout << "-------------------------------------------------------\n";
     cout << finishedPatients.GetCount() << " Finished patients: ";
-    finishedPatients.print();
+
+    // DESCENDING print of finishedPatients stack:
+    // DESCENDING FT: print directly without reversing (stack top has most recent FT)
+    ArrayStack<Patient *> copy = finishedPatients;
+    Patient *p = nullptr;
+    while (!copy.isEmpty())
+    {
+        copy.pop(p);
+        if (p)
+            cout << "P" << p->getID() << "_" << (p->getType() == PatientType::Normal ? "Normal" : "Recovering") << ", ";
+    }
+    cout << endl;
 }

@@ -45,9 +45,11 @@ private:
 public:
     Scheduler();
 
+    
     // Phase 2 Core Functions
-    void loadPatients(const std::string &inputFileName);
+    void loadPatients();
     void simulate();
+    int getAllPatientCount() const;
     bool simulationFinished() const;
     void generateOutputFile(const std::string &outputFileName);
 

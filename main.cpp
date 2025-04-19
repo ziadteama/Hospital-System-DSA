@@ -8,13 +8,12 @@ int main()
     UI ui;
 
     int mode = UI::getOperationMode();
-    std::string inputFile = UI::getInputFileName();
     std::string outputFile = UI::getOutputFileName();
     system.setMode(mode); // Store mode inside Scheduler
 
-    std::cout << "Reading patients from file: " << inputFile << "\n";
-    system.loadPatients(inputFile);
-    std::cout << "Finished loading patients.\n";
+    std::cout << "Reading patients from file: " << "\n";
+    system.loadPatients();
+    cout << "Loaded patients = " << system.getAllPatientCount() << endl;
 
     if (!system.simulationFinished())
     {

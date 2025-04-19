@@ -18,9 +18,9 @@ Scheduler::Scheduler()
     srand(time(nullptr));
 }
 
-void Scheduler::loadPatients(const std::string &inputFileName)
+void Scheduler::loadPatients()
 {
-    std::ifstream inFile(inputFileName);
+    std::ifstream inFile("input.txt");
     if (!inFile.is_open())
     {
         std::cerr << "ERROR: Cannot open input file.\n";
@@ -89,6 +89,11 @@ void Scheduler::loadPatients(const std::string &inputFileName)
     }
 
     inFile.close();
+}
+
+
+int Scheduler::getAllPatientCount() const {
+    return allPatients.GetCount();
 }
 
 bool Scheduler::simulationFinished() const
